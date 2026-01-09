@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Expense Tracker | Smart Budget Management</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --secondary: #10b981;
+            --dark: #1e293b;
+            --light: #f8fafc;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+        
+        .glassmorphism {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card-shadow {
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+        }
+        
+        .income-gradient {
+            background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+        }
+        
+        .expense-gradient {
+            background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
+        }
+        
+        .balance-gradient {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: rgba(79, 70, 229, 0.3);
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(79, 70, 229, 0.5);
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        <!-- Header Section -->
+        <header class="mb-10">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-4xl font-bold text-slate-800 flex items-center">
+                        <i class="fas fa-robot text-indigo-500 mr-3"></i>
+                        AI Expense Tracker
+                    </h1>
+                    <p class="text-slate-600 mt-2">Smart budgeting with AI-powered insights</p>
+                </div>
+                
+                <!-- User Name Section -->
+                <div class="flex items-center">
+                    <span class="mr-3 text-slate-600 hidden md:block">Welcome,</span>
+                    <div class="relative group">
+                        <h2 id="userName" class="text-2xl font-semibold text-indigo-600 cursor-pointer px-4 py-2 rounded-lg glassmorphism hover:bg-white transition-all duration-300">Alex</h2>
+                        <div class="absolute right-0 mt-2 w-64 p-4 bg-white rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-10">
+                            <p class="text-sm text-slate-600 mb-3">Edit your display name</p>
+                            <div class="flex">
+                                <input type="text" id="nameInput" class="flex-grow p-2 border border-slate-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-indigo-400" value="Alex">
+                                <button id="saveName" class="bg-indigo-500 text-white px-4 py-2 rounded-r-lg hover:bg-indigo-600 transition-colors">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Column -->
+            <div class="lg:col-span-2 space-y-8">
+                <!-- Dashboard Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Total Income Card -->
+                    <div class="rounded-2xl p-6 text-white income-gradient card-shadow fade-in">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-white/80">Total Income</p>
+                                <h3 id="totalIncome" class="text-3xl font-bold mt-2">$0.00</h3>
+                            </div>
+                            <div class="bg-white/20 p-3 rounded-full">
+                                <i class="fas fa-money-bill-wave text-2xl"></i>
+                            </div>
+                        </div>
+                        <div class="mt-4 text-sm">
+                            <i class="fas fa-arrow-up mr-1"></i>
+                            <span>Your monthly earnings</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Total Expense Card -->
+                    <div class="rounded-2xl p-6 text-white expense-gradient card-shadow fade-in">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-white/80">Total Expense</p>
+                                <h3 id="totalExpense" class="text-3xl font-bold mt-2">$0.00</h3>
+                            </div>
+                            <div class="bg-white/20 p-3 rounded-full">
+                                <i class="fas fa-shopping-cart text-2xl"></i>
+                            </div>
+                        </div>
+                        <div class="mt-4 text-sm">
+                            <i class="fas fa-arrow-down mr-1"></i>
+                            <span>Your monthly spending</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Current Balance Card -->
+                    <div class="rounded-2xl p-6 text-white balance-gradient card-shadow fade-in">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-white/80">Current Balance</p>
+                                <h3 id="currentBalance" class="text-3xl font-bold mt-2">$0.00</h3>
+                            </div>
+                            <div class="bg-white/20 p-3 rounded-full">
+                                <i class="fas fa-wallet text-2xl"></i>
+                            </div>
+                        </div>
+                        <div class="mt-4 text-sm">
+                            <i class="fas fa-balance-scale mr-1"></i>
+                            <span>Income - Expenses</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add Transaction Form -->
+                <div class="rounded-2xl p-6 glassmorphism card-shadow fade-in">
+                    <h3 class="text-xl font-bold text-slate-800 mb-6 flex items-center">
+                        <i class="fas fa-plus-circle text-indigo-500 mr-2"></i>
+                        Add New Transaction
+                    </h3>
+                    
+                    <form id="transactionForm" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-slate-700 mb-2 font-medium">Title</label>
+                            <input type="text" id="title" class="w-full p-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent" placeholder="e.g., Grocery Shopping" required>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-slate-700 mb-2 font-medium">Amount ($)</label>
+                            <input type="number" id="amount" step="0.01" class="w-full p-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent" placeholder="0.00" required>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-slate-700 mb-2 font-medium">Category</label>
+                            <select id="category" class="w-full p-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent">
+                                <option value="Food">Food & Dining</option>
+                                <option value="Rent">Rent & Mortgage</option>
+                                <option value="Transport">Transportation</option>
+                                <option value="Shopping">Shopping</option>
+                                <option value="Entertainment">Entertainment</option>
+                                <option value="Utilities">Utilities</option>
+                                <option value="Healthcare">Healthcare</option>
+                                <option value="Education">Education</option>
+                                <option value="Salary">Salary</option>
+                                <option value="Freelance">Freelance Income</option>
+                                <option value="Investment">Investment</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-slate-700 mb-2 font-medium">Type</label>
+                            <div class="flex space-x-4">
+                                <label class="flex items-center">
+                                    <input type="radio" name="type" value="Income" class="mr-2 text-indigo-600 focus:ring-indigo-500" checked>
+                                    <span class="text-slate-700">Income</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="type" value="Expense" class="mr-2 text-indigo-600 focus:ring-indigo-500">
+                                    <span class="text-slate-700">Expense</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="md:col-span-2">
+                            <button type="submit" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-medium py-3 px-6 rounded-xl transition-all duration-300 flex items-center justify-center">
+                                <i class="fas fa-plus mr-2"></i>
+                                Add Transaction
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Charts Section -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Pie Chart -->
+                    <div class="rounded-2xl p-6 glassmorphism card-shadow fade-in">
+                        <h3 class="text-xl font-bold text-slate-800 mb-6 flex items-center">
+                            <i class="fas fa-chart-pie text-emerald-500 mr-2"></i>
+                            Expenses by Category
+                        </h3>
+                        <div class="chart-container">
+                            <canvas id="pieChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- Bar Chart -->
+                    <div class="rounded-2xl p-6 glassmorphism card-shadow fade-in">
+                        <h3 class="text-xl font-bold text-slate-800 mb-6 flex items-center">
+                            <i class="fas fa-chart-bar text-indigo-500 mr-2"></i>
+                            Income vs Expense
+                        </h3>
+                        <div class="chart-container">
+                            <canvas id="barChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="space-y-8">
+                <!-- Transaction History -->
+                <div class="rounded-2xl p-6 glassmorphism card-shadow fade-in">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-bold text-slate-800 flex items-center">
+                            <i class="fas fa-history text-slate-600 mr-2"></i>
+                            Recent Transactions
+                        </h3>
+                        <button id="exportBtn" class="bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors flex items-center">
+                            <i class="fas fa-file-export mr-2"></i>
+                            Export CSV
+                        </button>
+                    </div>
+                    
+                    <div class="overflow-y-auto max-h-96">
+                        <div id="transactionList" class="space-y-4">
+                            <!-- Transactions will be dynamically added here -->
+                            <div class="text-center py-8 text-slate-500">
+                                <i class="fas fa-receipt text-4xl mb-3"></i>
+                                <p>No transactions yet</p>
+                                <p class="text-sm">Add your first transaction above</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI Budgeting Tips -->
+                <div class="rounded-2xl p-6 glassmorphism card-shadow fade-in">
+                    <h3 class="text-xl font-bold text-slate-800 mb-6 flex items-center">
+                        <i class="fas fa-robot text-indigo-500 mr-2"></i>
+                        AI Budgeting Tips
+                    </h3>
+                    
+                    <div id="aiTips" class="space-y-4">
+                        <!-- Tips will be dynamically generated here -->
+                        <div class="p-4 bg-indigo-50 rounded-xl border-l-4 border-indigo-400">
+                            <h4 class="font-medium text-slate-800 mb-1">Getting Started</h4>
+                            <p class="text-sm text-slate-600">Add your income and expenses to get personalized budgeting tips from our AI.</p>
+                        </div>
+                        <div class="p-4 bg-emerald-50 rounded-xl border-l-4 border-emerald-400">
+                            <h4 class="font-medium text-slate-800 mb-1">Track Regularly</h4>
+                            <p class="text-sm text-slate-600">Consistent tracking helps identify spending patterns and opportunities to save.</p>
+                        </div>
+                        <div class="p-4 bg-amber-50 rounded-xl border-l-4 border-amber-400">
+                            <h4 class="font-medium text-slate-800 mb-1">Set Goals</h4>
+                            <p class="text-sm text-slate-600">Define clear financial goals to stay motivated and focused on your budget.</p>
+                        </div>
+                    </div>
+                    
+                    <button id="refreshTips" class="w-full mt-6 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-3 px-6 rounded-xl transition-colors flex items-center justify-center">
+                        <i class="fas fa-sync-alt mr-2"></i>
+                        Generate New AI Tips
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="mt-12 pt-8 border-t border-slate-300 text-center text-slate-600 text-sm">
+            <p>AI Expense Tracker • Your smart budgeting companion • Data is saved locally in your browser</p>
+            <p class="mt-2"><i class="fas fa-shield-alt mr-1"></i> Your financial data never leaves your device</p>
+        </footer>
+    </div>
+
+    <script>
+        // DOM Elements
+        const userNameElement = document.getElementById('userName');
+        const nameInputElement = document.getElementById('nameInput');
+        const saveNameButton = document.getElementById('saveName');
+        const totalIncomeElement = document.getElementById('totalIncome');
+        const totalExpenseElement = document.getElementById('totalExpense');
+        const currentBalanceElement = document.getElementById('currentBalance');
+        const transactionForm = document.getElementById('transactionForm');
+        const transactionListElement = document.getElementById('transactionList');
+        const exportButton = document.getElementById('exportBtn');
+        const aiTipsElement = document.getElementById('aiTips');
+        const refreshTipsButton = document.getElementById('refreshTips');
+
+        // Chart instances
+        let pieChart, barChart;
+
+        // Application State
+        let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+        let userName = localStorage.getItem('userName') || 'Alex';
+
+        // Initialize the app
+        function initApp() {
+            // Set user name
+            userNameElement.textContent = userName;
+            nameInputElement.value = userName;
+            
+            // Load transactions and update UI
+            updateDashboard();
+            renderTransactionList();
+            initCharts();
+            generateAITips();
+            
+            // Set up event listeners
+            setupEventListeners();
+        }
+
+        // Set up all event listeners
+        function setupEventListeners() {
+            // Save user name
+            saveNameButton.addEventListener('click', saveUserName);
+            nameInputElement.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') saveUserName();
+            });
+            
+            // Add transaction form
+            transactionForm.addEventListener('submit', addTransaction);
+            
+            // Export transactions
+            exportButton.addEventListener('click', exportToCSV);
+            
+            // Refresh AI tips
+            refreshTipsButton.addEventListener('click', generateAITips);
+        }
+
+        // Save user name
+        function saveUserName() {
+            const newName = nameInputElement.value.trim();
+            if (newName) {
+                userName = newName;
+                userNameElement.textContent = userName;
+                localStorage.setItem('userName', userName);
+                
+                // Show feedback
+                const originalText = saveNameButton.innerHTML;
+                saveNameButton.innerHTML = '<i class="fas fa-check"></i> Saved!';
+                setTimeout(() => {
+                    saveNameButton.innerHTML = originalText;
+                }, 1500);
+            }
+        }
+
+        // Add a new transaction
+        function addTransaction(e) {
+            e.preventDefault();
+            
+            const title = document.getElementById('title').value;
+            const amount = parseFloat(document.getElementById('amount').value);
+            const category = document.getElementById('category').value;
+            const type = document.querySelector('input[name="type"]:checked').value;
+            
+            if (!title || isNaN(amount) || amount <= 0) {
+                alert('Please enter a valid title and amount');
+                return;
+            }
+            
+            const transaction = {
+                id: Date.now(),
+                title,
+                amount,
+                category,
+                type,
+                date: new Date().toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                })
+            };
+            
+            transactions.unshift(transaction);
+            saveTransactions();
+            updateDashboard();
+            renderTransactionList();
+            updateCharts();
+            generateAITips();
+            
+            // Reset form
+            transactionForm.reset();
+            document.querySelector('input[name="type"][value="Income"]').checked = true;
+            
+            // Show success feedback
+            const submitButton = transactionForm.querySelector('button[type="submit"]');
+            const originalText = submitButton.innerHTML;
+            submitButton.innerHTML = '<i class="fas fa-check"></i> Added!';
+            submitButton.classList.remove('bg-indigo-500');
+            submitButton.classList.add('bg-emerald-500');
+            
+            setTimeout(() => {
+                submitButton.innerHTML = originalText;
+                submitButton.classList.remove('bg-emerald-500');
+                submitButton.classList.add('bg-indigo-500');
+            }, 1500);
+        }
+
+        // Delete a transaction
+        function deleteTransaction(id) {
+            transactions = transactions.filter(transaction => transaction.id !== id);
+            saveTransactions();
+            updateDashboard();
+            renderTransactionList();
+            updateCharts();
+            generateAITips();
+        }
+
+        // Save transactions to localStorage
+        function saveTransactions() {
+            localStorage.setItem('transactions', JSON.stringify(transactions));
+        }
+
+        // Update dashboard totals
+        function updateDashboard() {
+            const totalIncome = transactions
+                .filter(t => t.type === 'Income')
+                .reduce((sum, t) => sum + t.amount, 0);
+                
+            const totalExpense = transactions
+                .filter(t => t.type === 'Expense')
+                .reduce((sum, t) => sum + t.amount, 0);
+                
+            const balance = totalIncome - totalExpense;
+            
+            totalIncomeElement.textContent = `$${totalIncome.toFixed(2)}`;
+            totalExpenseElement.textContent = `$${totalExpense.toFixed(2)}`;
+            currentBalanceElement.textContent = `$${balance.toFixed(2)}`;
+            
+            // Update color based on balance
+            if (balance < 0) {
+                currentBalanceElement.parentElement.parentElement.classList.remove('balance-gradient');
+                currentBalanceElement.parentElement.parentElement.classList.add('expense-gradient');
+            } else {
+                currentBalanceElement.parentElement.parentElement.classList.remove('expense-gradient');
+                currentBalanceElement.parentElement.parentElement.classList.add('balance-gradient');
+            }
+        }
+
+        // Render transaction list
+        function renderTransactionList() {
+            if (transactions.length === 0) {
+                transactionListElement.innerHTML = `
+                    <div class="text-center py-8 text-slate-500">
+                        <i class="fas fa-receipt text-4xl mb-3"></i>
+                        <p>No transactions yet</p>
+                        <p class="text-sm">Add your first transaction above</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            transactionListElement.innerHTML = transactions.map(transaction => `
+                <div class="p-4 bg-white rounded-xl border border-slate-200 hover:border-slate-300 transition-all duration-300 fade-in">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <div class="flex justify-between">
+                                <h4 class="font-medium text-slate-800">${transaction.title}</h4>
+                                <span class="font-bold ${transaction.type === 'Income' ? 'text-emerald-600' : 'text-rose-600'}">
+                                    ${transaction.type === 'Income' ? '+' : '-'}$${transaction.amount.toFixed(2)}
+                                </span>
+                            </div>
+                            <div class="flex items-center mt-2 text-sm text-slate-600">
+                                <span class="px-3 py-1 rounded-full ${getCategoryColor(transaction.category)} mr-3">
+                                    ${transaction.category}
+                                </span>
+                                <span><i class="far fa-calendar mr-1"></i>${transaction.date}</span>
+                                <span class="mx-2">•</span>
+                                <span class="px-2 py-1 rounded ${transaction.type === 'Income' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+                                    ${transaction.type}
+                                </span>
+                            </div>
+                        </div>
+                        <button class="ml-4 text-slate-400 hover:text-rose-500 transition-colors delete-btn" data-id="${transaction.id}">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+            
+            // Add event listeners to delete buttons
+            document.querySelectorAll('.delete-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const id = parseInt(e.currentTarget.getAttribute('data-id'));
+                    deleteTransaction(id);
+                });
+            });
+        }
+
+        // Get color for category badges
+        function getCategoryColor(category) {
+            const colorMap = {
+                'Food': 'bg-amber-100 text-amber-800',
+                'Rent': 'bg-violet-100 text-violet-800',
+                'Transport': 'bg-blue-100 text-blue-800',
+                'Shopping': 'bg-pink-100 text-pink-800',
+                'Entertainment': 'bg-purple-100 text-purple-800',
+                'Utilities': 'bg-cyan-100 text-cyan-800',
+                'Healthcare': 'bg-rose-100 text-rose-800',
+                'Education': 'bg-indigo-100 text-indigo-800',
+                'Salary': 'bg-emerald-100 text-emerald-800',
+                'Freelance': 'bg-lime-100 text-lime-800',
+                'Investment': 'bg-teal-100 text-teal-800',
+                'Other': 'bg-slate-100 text-slate-800'
+            };
+            
+            return colorMap[category] || 'bg-slate-100 text-slate-800';
+        }
+
+        // Initialize charts
+        function initCharts() {
+            const pieCtx = document.getElementById('pieChart').getContext('2d');
+            const barCtx = document.getElementById('barChart').getContext('2d');
+            
+            // Color palette for charts
+            const chartColors = [
+                '#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
+                '#06b6d4', '#ec4899', '#84cc16', '#f97316', '#64748b'
+            ];
+            
+            // Pie chart for expenses by category
+            pieChart = new Chart(pieCtx, {
+                type: 'pie',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        data: [],
+                        backgroundColor: chartColors,
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true,
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.raw || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = Math.round((value / total) * 100);
+                                    return `${label}: $${value.toFixed(2)} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Bar chart for income vs expense
+            barChart = new Chart(barCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Income', 'Expense'],
+                    datasets: [{
+                        label: 'Amount ($)',
+                        data: [0, 0],
+                        backgroundColor: ['#10b981', '#ef4444'],
+                        borderWidth: 0,
+                        borderRadius: 8,
+                        borderSkipped: false,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                display: true,
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value;
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: $${context.raw.toFixed(2)}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Update charts with initial data
+            updateCharts();
+        }
+
+        // Update charts with current data
+        function updateCharts() {
+            // Update pie chart (expenses by category)
+            const expenseByCategory = {};
+            transactions
+                .filter(t => t.type === 'Expense')
+                .forEach(t => {
+                    expenseByCategory[t.category] = (expenseByCategory[t.category] || 0) + t.amount;
+                });
+            
+            pieChart.data.labels = Object.keys(expenseByCategory);
+            pieChart.data.datasets[0].data = Object.values(expenseByCategory);
+            pieChart.update();
+            
+            // Update bar chart (income vs expense)
+            const totalIncome = transactions
+                .filter(t => t.type === 'Income')
+                .reduce((sum, t) => sum + t.amount, 0);
+                
+            const totalExpense = transactions
+                .filter(t => t.type === 'Expense')
+                .reduce((sum, t) => sum + t.amount, 0);
+            
+            barChart.data.datasets[0].data = [totalIncome, totalExpense];
+            barChart.update();
+        }
+
+        // Generate AI budgeting tips based on spending patterns
+        function generateAITips() {
+            if (transactions.length === 0) {
+                aiTipsElement.innerHTML = `
+                    <div class="p-4 bg-indigo-50 rounded-xl border-l-4 border-indigo-400">
+                        <h4 class="font-medium text-slate-800 mb-1">Getting Started</h4>
+                        <p class="text-sm text-slate-600">Add your income and expenses to get personalized budgeting tips from our AI.</p>
+                    </div>
+                    <div class="p-4 bg-emerald-50 rounded-xl border-l-4 border-emerald-400">
+                        <h4 class="font-medium text-slate-800 mb-1">Track Regularly</h4>
+                        <p class="text-sm text-slate-600">Consistent tracking helps identify spending patterns and opportunities to save.</p>
+                    </div>
+                    <div class="p-4 bg-amber-50 rounded-xl border-l-4 border-amber-400">
+                        <h4 class="font-medium text-slate-800 mb-1">Set Goals</h4>
+                        <p class="text-sm text-slate-600">Define clear financial goals to stay motivated and focused on your budget.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const totalIncome = transactions
+                .filter(t => t.type === 'Income')
+                .reduce((sum, t) => sum + t.amount, 0);
+                
+            const totalExpense = transactions
+                .filter(t => t.type === 'Expense')
+                .reduce((sum, t) => sum + t.amount, 0);
+            
+            const balance = totalIncome - totalExpense;
+            const expenseRatio = totalIncome > 0 ? (totalExpense / totalIncome) * 100 : 0;
+            
+            // Analyze spending by category
+            const categorySpending = {};
+            transactions
+                .filter(t => t.type === 'Expense')
+                .forEach(t => {
+                    categorySpending[t.category] = (categorySpending[t.category] || 0) + t.amount;
+                });
+            
+            // Find the highest spending category
+            let highestCategory = '';
+            let highestAmount = 0;
+            for (const [category, amount] of Object.entries(categorySpending)) {
+                if (amount > highestAmount) {
+                    highestAmount = amount;
+                    highestCategory = category;
+                }
+            }
+            
+            // Generate tips based on analysis
+            const tips = [];
+            
+            // Balance tip
+            if (balance < 0) {
+                tips.push({
+                    title: "Negative Balance Alert",
+                    message: `You're spending $${Math.abs(balance).toFixed(2)} more than you earn. Consider cutting expenses in your highest category (${highestCategory}).`,
+                    color: "rose"
+                });
+            } else if (balance > totalIncome * 0.2) {
+                tips.push({
+                    title: "Great Savings Rate",
+                    message: `You're saving over 20% of your income! Consider investing some of your savings for long-term growth.`,
+                    color: "emerald"
+                });
+            }
+            
+            // Expense ratio tip
+            if (expenseRatio > 80) {
+                tips.push({
+                    title: "High Spending Rate",
+                    message: `You're spending ${expenseRatio.toFixed(1)}% of your income. Try to reduce expenses to increase your savings.`,
+                    color: "amber"
+                });
+            } else if (expenseRatio < 50) {
+                tips.push({
+                    title: "Excellent Budget Control",
+                    message: `You're spending only ${expenseRatio.toFixed(1)}% of your income. You have great control over your finances!`,
+                    color: "emerald"
+                });
+            }
+            
+            // Category-specific tip
+            if (highestCategory && highestAmount > totalIncome * 0.3) {
+                tips.push({
+                    title: `High ${highestCategory} Spending`,
+                    message: `You're spending $${highestAmount.toFixed(2)} on ${highestCategory}, which is over 30% of your income. Look for ways to reduce this expense.`,
+                    color: "amber"
+                });
+            }
+            
+            // General tips if we don't have enough specific ones
+            const generalTips = [
+                {
+                    title: "Emergency Fund",
+                    message: "Ensure you have 3-6 months of expenses saved in an emergency fund for financial security.",
+                    color: "indigo"
+                },
+                {
+                    title: "Review Subscriptions",
+                    message: "Regularly review your subscriptions and cancel those you don't use frequently.",
+                    color: "blue"
+                },
+                {
+                    title: "Plan Large Purchases",
+                    message: "Plan major purchases in advance and save gradually to avoid impacting your budget.",
+                    color: "purple"
+                }
+            ];
+            
+            // Combine specific and general tips (max 3)
+            const allTips = [...tips, ...generalTips].slice(0, 3);
+            
+            // Render tips
+            aiTipsElement.innerHTML = allTips.map(tip => `
+                <div class="p-4 bg-${tip.color}-50 rounded-xl border-l-4 border-${tip.color}-400 fade-in">
+                    <h4 class="font-medium text-slate-800 mb-1">${tip.title}</h4>
+                    <p class="text-sm text-slate-600">${tip.message}</p>
+                </div>
+            `).join('');
+            
+            // Show feedback
+            const originalText = refreshTipsButton.innerHTML;
+            refreshTipsButton.innerHTML = '<i class="fas fa-check"></i> Tips Updated!';
+            refreshTipsButton.classList.remove('bg-slate-100');
+            refreshTipsButton.classList.add('bg-emerald-100', 'text-emerald-800');
+            
+            setTimeout(() => {
+                refreshTipsButton.innerHTML = originalText;
+                refreshTipsButton.classList.remove('bg-emerald-100', 'text-emerald-800');
+                refreshTipsButton.classList.add('bg-slate-100');
+            }, 1500);
+        }
+
+        // Export transactions to CSV
+        function exportToCSV() {
+            if (transactions.length === 0) {
+                alert('No transactions to export');
+                return;
+            }
+            
+            // Create CSV content
+            const headers = ['Date', 'Title', 'Amount', 'Category', 'Type'];
+            const csvRows = [headers.join(',')];
+            
+            transactions.forEach(transaction => {
+                const row = [
+                    `"${transaction.date}"`,
+                    `"${transaction.title}"`,
+                    transaction.amount.toFixed(2),
+                    `"${transaction.category}"`,
+                    `"${transaction.type}"`
+                ];
+                csvRows.push(row.join(','));
+            });
+            
+            const csvString = csvRows.join('\n');
+            
+            // Create download link
+            const blob = new Blob([csvString], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `expense-tracker-${new Date().toISOString().slice(0, 10)}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            
+            // Show feedback
+            const originalText = exportButton.innerHTML;
+            exportButton.innerHTML = '<i class="fas fa-check"></i> Exported!';
+            exportButton.classList.remove('bg-emerald-500');
+            exportButton.classList.add('bg-indigo-500');
+            
+            setTimeout(() => {
+                exportButton.innerHTML = originalText;
+                exportButton.classList.remove('bg-indigo-500');
+                exportButton.classList.add('bg-emerald-500');
+            }, 1500);
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', init
